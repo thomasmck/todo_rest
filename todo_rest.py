@@ -1,4 +1,4 @@
-from flask import Flask, abort, make_response, request
+from flask import Flask, abort, make_response, request, jsonify
 import sqlite3
 import json
 from datetime import datetime
@@ -11,12 +11,9 @@ app = Flask(__name__)
 def not_found(error):
     return make_response(json.dumps({'error': 'Not found'}), 404)
 
-@app.route('/')
-def hello_world():
-    return 'Hello World!'
-
 @app.route('/todo', methods=['GET'])
 def get_tasks():
+    # Return all tasks
     tasks = database_fetch("SELECT * FROM todolist")
     json_object = object_to_json(tasks)
     print(json_object)
@@ -24,6 +21,7 @@ def get_tasks():
 
 @app.route('/todo/<int:task_id>', methods=['GET'])
 def get_task(task_id):
+    # Return a specific (by id) task
     task = database_fetch("select * from todolist where id = %s" %task_id)
     if len(task) == 0:
         abort(404)
@@ -33,6 +31,7 @@ def get_task(task_id):
 
 @app.route('/todo', methods=['POST'])
 def post_task():
+    # Creates a new task
     # curl -H "Content-Type: application/json" -X POST -d '{"title":"Read a book", "description":"test curl"}' http://localhost:5000/todo
 
     if not request.json or not 'title' in request.json:
@@ -45,18 +44,48 @@ def post_task():
     command = "INSERT INTO todolist (date, title, description, done) VALUES (\'%s\', \'%s\', \'%s\', \'%s\')" %(date, title, description, done)
     database_put(command)
 
-    # Fetch the result we just put
+    # Fetch the result we just created
     task = database_fetch("SELECT * FROM todolist ORDER BY id DESC LIMIT 1;")
     json_object = object_to_json(task)
     return json_object
 
-@app.route('/PUT/')
-def put_task():
-    pass
+@app.route('/todo/<int:task_id>', methods=['PUT'])
+def put_task(task_id):
+    # Updates details for an existing task
+    #  curl -H "Content-Type: application/json" -X PUT -d '{"title":"Updated1", "description":"Updated1"}' http://localhost:5000/todo/2
+    task = database_fetch("select * from todolist where id = %s" % task_id)
+    # Check input meets requirements
+    if len(task) == 0:
+        abort(404)
+    task = task[0]
+    if not request.json:
+        abort(400)
+    """ if 'title' in request.json and type(request.json['title']) != unicode:
+        abort(400)
+    if 'description' in request.json and type(request.json['description']) is not unicode:
+        abort(400)"""
+    if 'done' in request.json and type(request.json['done']) is not bool:
+        abort(400)
+    title = request.json.get('title', task[1])
+    description = request.json.get('description', task[2])
+    done = request.json.get('done', task[3])
+    command = "UPDATE todolist SET title = \'%s\', description = \'%s\', done = \'%s\' WHERE id = %s" %(title, description, done, task_id)
+    database_put(command)
 
-@app.route('/DELETE/')
-def delete_task():
-    pass
+    # Fetch the updated task
+    task = task = database_fetch("select * from todolist where id = %s" % task_id)
+    json_object = object_to_json(task)
+    return json_object
+
+@app.route('/todo/<int:task_id>', methods=['DELETE'])
+def delete_task(task_id):
+    task = database_fetch("select * from todolist where id = %s" % task_id)
+    # Check input meets requirements
+    if len(task) == 0:
+        abort(404)
+    command = "DELETE FROM todolist WHERE id = %s" % task_id
+    database_put(command)
+    return jsonify({'result': True})
 
 def object_to_json(objects):
     # Convert database entries to json format
