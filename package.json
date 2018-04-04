@@ -1,0 +1,17 @@
+{
+    "name": "test",
+    "version": "1.0.0",
+    "description": "",
+    "main": "server.js",
+    "scripts": {
+        "watch": "nodemon server.js -e js,pug",
+        "start": "node server.js; python todo_rest/todo_rest.py"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "body-parser": "^1.18.2",
+        "express": "^4.16.3",
+        "pug": "^2.0.3"
+    }
+}

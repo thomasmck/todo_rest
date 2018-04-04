@@ -11,6 +11,10 @@ app = Flask(__name__)
 def not_found(error):
     return make_response(json.dumps({'error': 'Not found'}), 404)
 
+@app.route('/')
+def hello_world():
+    return "Hello World"
+
 @app.route('/todo', methods=['GET'])
 def get_tasks():
     # Return all tasks
@@ -41,6 +45,8 @@ def post_task():
     description = request.json.get('description', "")
     done = False
     # This is super ugly, should be converted to some sort of wrapper
+    # Looks like pyPika could do the job: https://pypi.python.org/pypi/PyPika
+    # Could also consider usign sqlalchemy
     command = "INSERT INTO todolist (date, title, description, done) VALUES (\'%s\', \'%s\', \'%s\', \'%s\')" %(date, title, description, done)
     database_put(command)
 
@@ -51,6 +57,7 @@ def post_task():
 
 @app.route('/todo/<int:task_id>', methods=['PUT'])
 def put_task(task_id):
+
     # Updates details for an existing task
     #  curl -H "Content-Type: application/json" -X PUT -d '{"title":"Updated1", "description":"Updated1"}' http://localhost:5000/todo/2
     task = database_fetch("select * from todolist where id = %s" % task_id)
@@ -59,13 +66,15 @@ def put_task(task_id):
         abort(404)
     task = task[0]
     if not request.json:
+        print("NOT JSON")
+        print(request)
         abort(400)
     """ if 'title' in request.json and type(request.json['title']) != unicode:
         abort(400)
     if 'description' in request.json and type(request.json['description']) is not unicode:
-        abort(400)"""
-    if 'done' in request.json and type(request.json['done']) is not bool:
         abort(400)
+    if 'done' in request.json and type(request.json['done']) is not bool:
+        abort(400)"""
     title = request.json.get('title', task[1])
     description = request.json.get('description', task[2])
     done = request.json.get('done', task[3])
@@ -95,7 +104,8 @@ def object_to_json(objects):
             'date': object[0],
             'title': object[1],
             'description': object[2],
-            'done': object[3]
+            'done': object[3],
+            'id': object[4]
         }
         list.append(object_dict)
     if len(list) == 1:

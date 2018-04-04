@@ -1,0 +1,15 @@
+html
+  head
+    title= title
+  body
+    button(onclick="window.location.href='/CREATE'") New TODO
+    p
+    each item in message
+      form(action='/DELETE', method='POST')
+        input(type="text" name="title" value=item['title'])
+        input(type="text" name="id" value=item['id'])
+        input(type="text" name="date" value=item['date'])
+        input(type="text" name="description" value=item['description'])
+        input(type="text" name="done" value=item['done'])
+        button(type="submit") Delete
+        button(type="submit" formaction="/PUT") Update
